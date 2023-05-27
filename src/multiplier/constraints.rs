@@ -4,6 +4,7 @@ use ark_relations::{
     r1cs::{ConstraintSynthesizer, ConstraintSystemRef, SynthesisError},
 };
 
+#[derive(Clone)]
 pub struct Multipler<F: Field> {
     pub output: Option<F>,
     pub input1: Option<F>,
@@ -22,9 +23,6 @@ impl<F: Field> Multipler<F> {
 
 impl<F: Field> ConstraintSynthesizer<F> for Multipler<F> {
     fn generate_constraints(self, cs: ConstraintSystemRef<F>) -> Result<(), SynthesisError> {
-        // let i1 = Input1Var::new_witness(ark_relations::ns!(cs, "Input1"), || {
-        //     self.input1.ok_or(SynthesisError::AssignmentMissing)
-        // });
         // public
         let output_var =
             cs.new_input_variable(|| self.output.ok_or(SynthesisError::AssignmentMissing))?;

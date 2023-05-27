@@ -1,2 +1,4 @@
+#![feature(test)]
+
 pub mod multiplier;
-pub mod alegbra;
+pub mod algebra;
