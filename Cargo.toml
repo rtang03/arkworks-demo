@@ -1,0 +1,21 @@
+[package]
+name = "arkworks-demo"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+ark-bls12-381 = { version = "0.4.0", features = ["default"] }
+ark-crypto-primitives = { version = "0.4.0", features = ["crh", "r1cs"] }
+ark-ec = { version = "0.4.2", features = ["std"] }
+ark-ed-on-bls12-381 = { version = "0.4.0", features = ["r1cs"] }
+ark-ff = { version = "0.4.2", features = ["std"] }
+ark-groth16 = "0.4.0"
+ark-r1cs-std = "0.4.0"
+ark-relations = "0.4.0"
+ark-serialize = "0.4.2"
+ark-snark = "0.4.0"
+ark-std = { version = "0.4.0", features = ["default", "getrandom"] }
+num-bigint = "0.4.3"
+rand = { version = "0.8.5", features = ["std_rng"] }
