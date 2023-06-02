@@ -7,15 +7,28 @@ edition = "2021"
 
 [dependencies]
 ark-bls12-381 = { version = "0.4.0", features = ["default"] }
-ark-crypto-primitives = { version = "0.4.0", features = ["crh", "r1cs"] }
+ark-crypto-primitives = { version = "0.4.0", features = [
+  "std",
+  "crh",
+  "r1cs",
+  "merkle_tree",
+] }
 ark-ec = { version = "0.4.2", features = ["std"] }
-ark-ed-on-bls12-381 = { version = "0.4.0", features = ["r1cs"] }
+ark-ed-on-bls12-381 = { version = "0.4.0", features = ["r1cs", "std"] }
 ark-ff = { version = "0.4.2", features = ["std"] }
+ark-ff-macros = "0.4.2"
 ark-groth16 = "0.4.0"
-ark-r1cs-std = "0.4.0"
-ark-relations = "0.4.0"
+ark-r1cs-std = { version = "0.4.0", features = ["std"], optional = true }
+ark-relations = { version = "0.4.0", features = ["std"], optional = true }
 ark-serialize = "0.4.2"
 ark-snark = "0.4.0"
-ark-std = { version = "0.4.0", features = ["default", "getrandom"] }
+ark-std = { version = "0.4.0", features = ["std", "getrandom"] }
+ark-test-curves = "0.4.2"
 num-bigint = "0.4.3"
 rand = { version = "0.8.5", features = ["std_rng"] }
+
+[features]
+default = ["std", "parallel", "r1cs"]
+std = ["ark-ff/std", "ark-ec/std", "ark-std/std", "ark-relations/std", "ark-serialize/std", "ark-crypto-primitives/std"]
+r1cs = ["ark-relations", "ark-r1cs-std", "ark-crypto-primitives/r1cs"]
+parallel = ["std", "ark-ff/parallel", "ark-ec/parallel", "ark-std/parallel"]
