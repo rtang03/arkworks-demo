@@ -3,3 +3,4 @@
 pub mod multiplier;
 pub mod algebra;
 pub mod merkle_tree;
+pub mod basic_merkle_tree;

@@ -97,7 +97,7 @@ mod byte_mt_tests {
                 )
                 .unwrap());
 
-            // step 4c: allocate Merkle Tree root -> witness (public)
+            // step 4c: allocate Merkle Tree root -> witness (private)
             let root = <LeafHG as CRHSchemeGadget<LeafH, _>>::OutputVar::new_witness(
                 ark_relations::ns!(cs, "new_digest"),
                 || {
