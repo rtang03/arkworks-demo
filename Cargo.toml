@@ -12,6 +12,7 @@ ark-crypto-primitives = { version = "0.4.0", features = [
   "crh",
   "r1cs",
   "merkle_tree",
+  "signature"
 ] }
 ark-ec = { version = "0.4.2", features = ["std"] }
 ark-ed-on-bls12-381 = { version = "0.4.0", features = ["r1cs", "std"] }
@@ -24,8 +25,12 @@ ark-serialize = "0.4.2"
 ark-snark = "0.4.0"
 ark-std = { version = "0.4.0", features = ["std", "getrandom"] }
 ark-test-curves = "0.4.2"
+blake2 = "0.10.6"
+digest = "0.10.7"
 num-bigint = "0.4.3"
 rand = { version = "0.8.5", features = ["std_rng"] }
+tracing = { version = "0.1", default-features = false, features = [ "attributes" ] }
+tracing-subscriber = { version = "0.2" }
 
 [features]
 default = ["std", "parallel", "r1cs"]

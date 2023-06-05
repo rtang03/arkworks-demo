@@ -82,8 +82,13 @@ impl ConstraintSynthesizer<ConstraintF> for MerkleTreeVerification {
     }
 }
 
+// Run this test via `cargo test --release merkle_tree_constraints_correctness`.
 #[test]
 fn merkle_tree_constraints_correctness() {
+    use ark_relations::r1cs::ConstraintSystem;
+    use ark_relations::r1cs::{ConstraintLayer, TracingMode};
+    use tracing_subscriber::layer::SubscriberExt;
+
     let mut rng = ark_std::test_rng();
 
     // step 1: given rng, prepare leaf_crh_params
@@ -127,7 +132,14 @@ fn merkle_tree_constraints_correctness() {
         authentication_path: Some(proof),
     };
 
-    let cs = ark_relations::r1cs::ConstraintSystem::new_ref();
+    // Todo: revisit it later
+    // First, some boilerplat that helps with debugging
+    let mut layer = ConstraintLayer::default();
+    layer.mode = TracingMode::OnlyConstraints;
+    let subscriber = tracing_subscriber::Registry::default().with(layer);
+    let _guard = tracing::subscriber::set_default(subscriber);
+
+    let cs = ConstraintSystem::new_ref();
     circuit.generate_constraints(cs.clone()).unwrap();
     // Let's check whether the constraint system is satisfied
     let is_satisfied = cs.is_satisfied().unwrap();
@@ -136,4 +148,83 @@ fn merkle_tree_constraints_correctness() {
         println!("{:?}", cs.which_is_unsatisfied());
     }
     assert!(is_satisfied);
+}
+
+// Run this test via `cargo test --release merkle_tree_constraints_soundness`.
+// This tests that a given invalid authentication path will fail.
+#[test]
+fn merkle_tree_constraints_soundness() {
+    use ark_relations::r1cs::ConstraintSystem;
+    use ark_relations::r1cs::{ConstraintLayer, TracingMode};
+    use tracing_subscriber::layer::SubscriberExt;
+
+    // Let's set up an RNG for use within tests. Note that this is *not* safe
+    // for any production use.
+    let mut rng = ark_std::test_rng();
+
+    // step 1: given rng, prepare leaf_crh_params
+    let leaf_crh_params: pedersen::Parameters<
+        ark_ec::twisted_edwards::Projective<ark_ed_on_bls12_381::JubjubConfig>,
+    > = <LeafH as CRHScheme>::setup(&mut rng).unwrap();
+
+    // step 2: given rng, prepare two_to_one_crh_params
+    let two_to_one_crh_params: pedersen::Parameters<
+        ark_ec::twisted_edwards::Projective<ark_ed_on_bls12_381::JubjubConfig>,
+    > = <CompressH as TwoToOneCRHScheme>::setup(&mut rng).unwrap();
+
+    // step 3: new tree
+    let mut leaves = Vec::new();
+    let mut leaves2 = Vec::new();
+
+    for i in 0..4u8 {
+        let input: Vec<u8> = vec![i; 30];
+        leaves.push(input);
+        let input2: Vec<u8> = vec![i + 5; 30];
+        leaves2.push(input2);
+    }
+
+    let tree = JubJubMerkleTree::new(
+        &leaf_crh_params,
+        &two_to_one_crh_params,
+        leaves.iter().map(|v: &Vec<u8>| v.as_slice()), // the i-th entry is the i-th leaf.
+    )
+    .unwrap();
+
+    let second_tree = JubJubMerkleTree::new(
+        &leaf_crh_params,
+        &two_to_one_crh_params,
+        leaves2.iter().map(|v: &Vec<u8>| v.as_slice()), // the i-th entry is the i-th leaf.
+    )
+    .unwrap();
+
+    let proof = tree.generate_proof(1).unwrap();
+
+    // But, let's get the root we want to verify against:
+    let wrong_root = second_tree.root();
+
+    let circuit = MerkleTreeVerification {
+        leaf_crh_params,
+        two_to_one_crh_params,
+
+        // public inputs
+        root: wrong_root,
+        leaf: leaves[1].clone(),
+
+        // witness
+        authentication_path: Some(proof),
+    };
+
+    // First, some boilerplate that helps with debugging
+    let mut layer = ConstraintLayer::default();
+    layer.mode = TracingMode::OnlyConstraints;
+    let subscriber = tracing_subscriber::Registry::default().with(layer);
+    let _guard = tracing::subscriber::set_default(subscriber);
+
+    // Next, let's make the constraint system!
+    let cs = ConstraintSystem::new_ref();
+    circuit.generate_constraints(cs.clone()).unwrap();
+    // Let's check whether the constraint system is satisfied
+    let is_satisfied = cs.is_satisfied().unwrap();
+    // We expect this to fail!
+    assert!(!is_satisfied);
 }

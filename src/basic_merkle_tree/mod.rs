@@ -1,11 +1,9 @@
 pub mod common;
 pub mod constraints;
 
-use common::*;
-
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::common::*;
     use ark_crypto_primitives::{
         crh::{pedersen, CRHScheme, TwoToOneCRHScheme},
         merkle_tree::MerkleTree,
