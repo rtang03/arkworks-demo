@@ -3,7 +3,7 @@ use ark_crypto_primitives::{
     crh::{pedersen, CRHScheme, CRHSchemeGadget, TwoToOneCRHScheme, TwoToOneCRHSchemeGadget},
     merkle_tree::constraints::PathVar,
 };
-use ark_ed_on_bls12_381::{constraints::EdwardsVar, EdwardsProjective as JubJub, Fq, JubjubConfig};
+use ark_ed_on_bls12_381::{constraints::EdwardsVar, EdwardsProjective as JubJub, JubjubConfig};
 use ark_r1cs_std::{prelude::*, uint8::UInt8};
 use ark_relations::{
     ns,
@@ -18,7 +18,22 @@ pub type RootVar =
     >>::OutputVar;
 
 /// The R1CS equivalent of the the Merkle tree path.
-pub type SimplePathVar = PathVar<JubJubMerkleTreeParams, Fq, JubJubMerkleTreeParamsVar>;
+pub type SimplePathVar = PathVar<JubJubMerkleTreeParams, ConstraintF, JubJubMerkleTreeParamsVar>;
+
+pub type LeafHashParamsVar = <LeafHG as CRHSchemeGadget<LeafH, ConstraintF>>::ParametersVar;
+
+pub type TwoToOneHashParamsVar =
+    <CompressHG as TwoToOneCRHSchemeGadget<CompressH, ConstraintF>>::ParametersVar;
+
+pub type AllocVarParameters = <pedersen::CRH<
+    ark_ec::twisted_edwards::Projective<JubjubConfig>,
+    Window4x25,
+> as CRHScheme>::Parameters;
+
+pub type AllocVarOutput = <pedersen::CRH<
+    ark_ec::twisted_edwards::Projective<JubjubConfig>,
+    Window4x25,
+> as CRHScheme>::Output;
 
 pub struct MerkleTreeVerification {
     pub leaf_crh_params: <LeafH as CRHScheme>::Parameters,
@@ -36,30 +51,21 @@ pub struct MerkleTreeVerification {
 impl ConstraintSynthesizer<ConstraintF> for MerkleTreeVerification {
     fn generate_constraints(self, cs: ConstraintSystemRef<ConstraintF>) -> Result<()> {
         // allocate public input
-        let root = <RootVar as AllocVar<
-            <pedersen::CRH<
-                ark_ec::twisted_edwards::Projective<JubjubConfig>,
-                Window4x25,
-            > as CRHScheme>::Output,
-            ConstraintF,
-        >>::new_input(ns!(cs, "root_var"), || Ok(&self.root))?;
+        let root = <RootVar as AllocVar<AllocVarOutput, ConstraintF>>::new_input(
+            ns!(cs, "root_var"),
+            || Ok(&self.root),
+        )?;
 
         let leaf_g = UInt8::new_input_vec(cs.clone(), &self.leaf)?;
 
         let leaf_crh_params_var =
-            <<LeafHG as CRHSchemeGadget<LeafH, _>>::ParametersVar as AllocVar<<pedersen::CRH<
-                ark_ec::twisted_edwards::Projective<JubjubConfig>,
-                Window4x25,
-            > as CRHScheme>::Parameters, ConstraintF>>::new_constant(
+            <LeafHashParamsVar as AllocVar<AllocVarParameters, ConstraintF>>::new_constant(
                 ns!(cs, "leaf_crh_parameter"),
                 &self.leaf_crh_params,
             )?;
 
         let two_to_one_crh_params_var =
-            <<CompressHG as TwoToOneCRHSchemeGadget<CompressH, _>>::ParametersVar as AllocVar<<pedersen::CRH<
-                ark_ec::twisted_edwards::Projective<JubjubConfig>,
-                Window4x25,
-            > as CRHScheme>::Parameters, ConstraintF>>::new_constant(
+            <TwoToOneHashParamsVar as AllocVar<AllocVarParameters, ConstraintF>>::new_constant(
                 ns!(cs, "two_to_one_crh_parameter"),
                 &self.two_to_one_crh_params,
             )?;
